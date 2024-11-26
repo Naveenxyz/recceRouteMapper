@@ -1,9 +1,18 @@
 // src/App.tsx
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useContext } from 'react';
 import {
-  Upload, Download, Map as MapIcon, Image as ImageIcon,
-  Eye, EyeOff, FileText, Info, ChevronRight
+  Upload,
+  Download,
+  Map as MapIcon,
+  Image as ImageIcon,
+  Eye,
+  EyeOff,
+  FileText,
+  Info,
+  ChevronRight,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; // Ensure framer-motion is installed
 import Map from './components/Map';
@@ -12,19 +21,19 @@ import { generateGPX } from './utils/gpx';
 import ImageViewer from './components/ImageViewer';
 import { ImageMetadata } from './types';
 import exifr from 'exifr';
-import { theme } from './themes'; // Import the theme
+import { ThemeContext, ThemeProvider } from './ThemeContext'; // Import ThemeContext and ThemeProvider
 
-// Define GPXPoint type
-interface GPXPoint {
-  lat: number;
-  lon: number;
-  name?: string;
-  time?: string;
-}
+// Ensure that your components like Map, GpxMap, ImageViewer use the ThemeContext
 
-function App() {
+function AppContent() {
+  const { theme, toggleTheme, isDarkMode } = useContext(ThemeContext);
+
+  const fadeIn = theme.animations.fadeIn;
+
   // Tab Navigation State
-  const [activeTab, setActiveTab] = useState<'map' | 'gpxViewer' | 'metadataViewer'>('map');
+  const [activeTab, setActiveTab] = useState<'map' | 'gpxViewer' | 'metadataViewer'>(
+    'map'
+  );
 
   /* ==========================
      ====== Map Tab States =====
@@ -57,7 +66,8 @@ function App() {
           newImages.push({
             latitude: metadata.latitude,
             longitude: metadata.longitude,
-            timestamp: metadata.DateTimeOriginal || metadata.CreateDate,
+            timestamp:
+              metadata.DateTimeOriginal || metadata.CreateDate || new Date(),
             make: metadata.Make,
             model: metadata.Model,
             fileName: file.name,
@@ -105,7 +115,8 @@ function App() {
           newImages.push({
             latitude: metadata.latitude,
             longitude: metadata.longitude,
-            timestamp: metadata.DateTimeOriginal || metadata.CreateDate,
+            timestamp:
+              metadata.DateTimeOriginal || metadata.CreateDate || new Date(),
             make: metadata.Make,
             model: metadata.Model,
             fileName: file.name,
@@ -168,7 +179,9 @@ function App() {
   }, [images]);
 
   const handleNext = () => {
-    setSelectedImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+    setSelectedImageIndex((prev) =>
+      Math.min(prev + 1, images.length - 1)
+    );
   };
 
   const handlePrevious = () => {
@@ -183,6 +196,14 @@ function App() {
   const [gpxLoading, setGpxLoading] = useState(false);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const gpxInputRef = useRef<HTMLInputElement>(null);
+
+  // Define GPXPoint type
+  interface GPXPoint {
+    lat: number;
+    lon: number;
+    name?: string;
+    time?: string;
+  }
 
   // Handle GPX File Upload
   const handleGpxUpload = async (
@@ -233,7 +254,10 @@ function App() {
       setGpxPoints(points);
     } catch (err: any) {
       console.error('Error parsing GPX file:', err);
-      setGpxError(err.message || 'Error parsing GPX file. Please ensure it is a valid GPX format.');
+      setGpxError(
+        err.message ||
+          'Error parsing GPX file. Please ensure it is a valid GPX format.'
+      );
     } finally {
       setGpxLoading(false);
     }
@@ -298,7 +322,7 @@ function App() {
     lat2: number,
     lon2: number
   ): number {
-    const R = 6371;
+    const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
     const a =
@@ -319,7 +343,7 @@ function App() {
      ====== Render Function ========
      ============================== */
   return (
-    <div className={`${theme.layout.container}`}>
+    <div className={`min-h-screen ${theme.colors.backgroundGradient} ${theme.colors.textPrimary} py-8 px-4`}>
       <motion.div
         className="max-w-7xl mx-auto space-y-8"
         initial={{ opacity: 0 }}
@@ -329,7 +353,7 @@ function App() {
         {/* Header */}
         <motion.div
           className={`${theme.layout.header}`}
-          variants={theme.animations.fadeIn}
+          variants={fadeIn}
           initial="initial"
           animate="animate"
         >
@@ -339,12 +363,34 @@ function App() {
           <p className={theme.text.paragraph}>
             Transform your journey into interactive visualizations
           </p>
+          {/* Theme Toggle Button */}
+          <div className="flex justify-end">
+            <motion.button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 transition-all duration-200 ease-in-out"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Toggle Theme"
+              >
+            {isDarkMode ? (
+            <>
+            <Sun className="w-4 h-4" />
+            Light Mode
+            </>
+            ) : (
+            <>
+            <Moon className="w-4 h-4" />
+            Dark Mode
+            </>
+            )}
+            </motion.button>
+          </div>
         </motion.div>
 
         {/* Tab Navigation */}
         <motion.div
           className={`${theme.layout.glassPane}`}
-          variants={theme.animations.fadeIn}
+          variants={fadeIn}
           initial="initial"
           animate="animate"
         >
@@ -355,15 +401,15 @@ function App() {
                 onClick={() => setActiveTab(tab as any)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                   activeTab === tab
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'bg-gray-300/50 text-gray-800 hover:bg-gray-400/50'
+                    ? theme.colors.primary + ' shadow-lg shadow-indigo-600/30'
+                    : theme.colors.secondary + ' hover:bg-gray-400/50'
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {tab === 'map' && <MapIcon className={theme.colors.button.icon} />}
-                {tab === 'gpxViewer' && <FileText className={theme.colors.button.icon} />}
-                {tab === 'metadataViewer' && <Info className={theme.colors.button.icon} />}
+                {tab === 'map' && <MapIcon className={`${theme.buttons.icon}`} />}
+                {tab === 'gpxViewer' && <FileText className={`${theme.buttons.icon}`} />}
+                {tab === 'metadataViewer' && <Info className={`${theme.buttons.icon}`} />}
                 {tab.charAt(0).toUpperCase() + tab.slice(1).replace('Viewer', ' Viewer')}
               </motion.button>
             ))}
@@ -384,10 +430,10 @@ function App() {
               <div className="space-y-8">
                 <div className="space-y-4">
                   <h2 className={`${theme.text.heading2}`}>
-                    <ImageIcon className="w-6 h-6 text-blue-500" />
+                    <ImageIcon className="w-6 h-6 text-indigo-500" />
                     <span>Image Upload</span>
                   </h2>
-                  <p className={`${theme.text.textSecondary}`}>
+                  <p className={`${theme.colors.textSecondary}`}>
                     Select GPS-tagged images to visualize your route. Supported formats: JPG, JPEG, PNG
                   </p>
                   <div className="flex gap-4">
@@ -397,7 +443,7 @@ function App() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Upload className={`${theme.colors.button.icon}`} />
+                      <Upload className={`${theme.buttons.icon}`} />
                       Upload Images
                     </motion.button>
                     <motion.button
@@ -406,7 +452,7 @@ function App() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Upload className={`${theme.colors.button.icon}`} />
+                      <Upload className={`${theme.buttons.icon}`} />
                       Add More Images
                     </motion.button>
                   </div>
@@ -420,8 +466,10 @@ function App() {
                     animate="animate"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <div className={`${theme.colors.spinner}`} />
-                      <p className={`${theme.text.textSecondary}`}>Processing your images...</p>
+                      <div className={`${theme.animations.spinner}`} />
+                      <p className={`${theme.colors.textSecondary}`}>
+                        Processing your images...
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -445,7 +493,7 @@ function App() {
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                        <MapIcon className="w-5 h-5 text-blue-500" />
+                        <MapIcon className="w-5 h-5 text-indigo-500" />
                         Route Visualization
                       </h3>
                       <div className="flex items-center gap-4">
@@ -473,7 +521,7 @@ function App() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <Download className={`${theme.colors.button.icon}`} />
+                          <Download className={`${theme.buttons.icon}`} />
                           Export GPX
                         </motion.button>
                       </div>
@@ -529,19 +577,19 @@ function App() {
               >
                 <div className="space-y-4">
                   <h2 className={`${theme.text.heading2}`}>
-                    <FileText className="w-6 h-6 text-blue-500" />
+                    <FileText className="w-6 h-6 text-indigo-500" />
                     GPX File Viewer
                   </h2>
-                  <p className={`${theme.text.textSecondary}`}>
+                  <p className={`${theme.colors.textSecondary}`}>
                     Upload a GPX file to visualize your route data
                   </p>
                   <motion.button
                     onClick={() => gpxInputRef.current?.click()}
-                    className={`${theme.colors.primary} ${theme.buttons.upload}`}
+                    className={`${theme.buttons.upload} ${theme.colors.primary}`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Upload className={`${theme.colors.button.icon}`} />
+                    <Upload className={`${theme.buttons.icon}`} />
                     Upload GPX File
                     {gpxFile && (
                       <span className="ml-2 text-sm opacity-80">
@@ -559,8 +607,10 @@ function App() {
                     animate="animate"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <div className={`${theme.colors.spinner}`} />
-                      <p className={`${theme.text.textSecondary}`}>Processing GPX file...</p>
+                      <div className={`${theme.animations.spinner}`} />
+                      <p className={`${theme.colors.textSecondary}`}>
+                        Processing GPX file...
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -596,19 +646,19 @@ function App() {
               >
                 <div className="space-y-4">
                   <h2 className={`${theme.text.heading2}`}>
-                    <Info className="w-6 h-6 text-blue-500" />
+                    <Info className="w-6 h-6 text-indigo-500" />
                     Image Metadata Viewer
                   </h2>
-                  <p className={`${theme.text.textSecondary}`}>
+                  <p className={`${theme.colors.textSecondary}`}>
                     Upload an image to view its detailed metadata
                   </p>
                   <motion.button
                     onClick={() => metadataInputRef.current?.click()}
-                    className={`${theme.colors.primary} ${theme.buttons.upload}`}
+                    className={`${theme.buttons.upload} ${theme.colors.primary}`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Upload className={`${theme.colors.button.icon}`} />
+                    <Upload className={`${theme.buttons.icon}`} />
                     Select Image
                     {metadataImage && (
                       <span className="ml-2 text-sm opacity-80">
@@ -626,8 +676,10 @@ function App() {
                     animate="animate"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <div className={`${theme.colors.spinner}`} />
-                      <p className={`${theme.text.textSecondary}`}>Extracting metadata...</p>
+                      <div className={`${theme.animations.spinner}`} />
+                      <p className={`${theme.colors.textSecondary}`}>
+                        Extracting metadata...
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -652,20 +704,31 @@ function App() {
                     <h3 className={`${theme.text.heading3}`}>
                       Metadata Results
                     </h3>
-                    <div className={`${theme.layout.glassPane} overflow-x-auto`}>
-                      <table className={`${theme.layout.table}`}>
+                    <div className={`${theme.colors.glass} overflow-x-auto`}>
+                      <table className={`${theme.colors.table}`}>
                         <thead>
-                          <tr className={`${theme.layout.tableHeader}`}>
-                            <th className="py-3 px-4 text-left text-gray-600">Field</th>
-                            <th className="py-3 px-4 text-left text-gray-600">Value</th>
+                          <tr className={`${theme.colors.tableHeader}`}>
+                            <th className="py-3 px-4 text-left text-gray-600">
+                              Field
+                            </th>
+                            <th className="py-3 px-4 text-left text-gray-600">
+                              Value
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {Object.entries(metadata).map(([key, value]) => (
-                            <tr key={key} className={`${theme.layout.tableRow}`}>
-                              <td className="py-3 px-4 font-medium text-blue-500">{key}</td>
+                            <tr
+                              key={key}
+                              className={`${theme.colors.tableRow}`}
+                            >
+                              <td className="py-3 px-4 font-medium text-indigo-500">
+                                {key}
+                              </td>
                               <td className="py-3 px-4 text-gray-700">
-                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                {typeof value === 'object'
+                                  ? JSON.stringify(value)
+                                  : String(value)}
                               </td>
                             </tr>
                           ))}
@@ -680,12 +743,46 @@ function App() {
         </AnimatePresence>
 
         {/* Hidden Input Elements */}
-        <input type="file" multiple accept="image/*" onChange={handleImageUpload} ref={uploadInputRef} className="hidden" />
-        <input type="file" multiple accept="image/*" onChange={handleAddImages} ref={addInputRef} className="hidden" />
-        <input type="file" accept=".gpx" onChange={handleGpxUpload} ref={gpxInputRef} className="hidden" />
-        <input type="file" accept="image/*" onChange={handleMetadataUpload} ref={metadataInputRef} className="hidden" />
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleImageUpload}
+          ref={uploadInputRef}
+          className="hidden"
+        />
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleAddImages}
+          ref={addInputRef}
+          className="hidden"
+        />
+        <input
+          type="file"
+          accept=".gpx"
+          onChange={handleGpxUpload}
+          ref={gpxInputRef}
+          className="hidden"
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleMetadataUpload}
+          ref={metadataInputRef}
+          className="hidden"
+        />
       </motion.div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

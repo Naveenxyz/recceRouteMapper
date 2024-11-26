@@ -1,6 +1,6 @@
 // src/components/ImageViewer.tsx
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,7 +15,7 @@ import {
 import { ImageMetadata } from '../types';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { theme } from '../themes'; // Import the centralized theme
+import { ThemeContext } from '../ThemeContext'; // Import ThemeContext
 
 interface ImageViewerProps {
   images: ImageMetadata[];
@@ -30,6 +30,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   onNext,
   onPrevious,
 }) => {
+  const { theme } = useContext(ThemeContext); // Consume theme from context
   const currentImage = images[currentIndex];
   const [isEnlarged, setIsEnlarged] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -95,7 +96,9 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
               onClick={toggleEnlarge}
             />
           </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/90 pointer-events-none" />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/90 pointer-events-none"
+          />
 
           {/* Navigation Buttons */}
           <div className="absolute inset-0 flex items-center justify-between px-4">
@@ -172,22 +175,24 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
           >
             {currentImage.timestamp && (
               <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                <Calendar className="w-4 h-4 text-blue-500" />
+                <Calendar className="w-4 h-4 text-indigo-500" />
                 <span>{format(new Date(currentImage.timestamp), 'PPpp')}</span>
               </div>
             )}
             {(currentImage.make || currentImage.model) && (
               <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                <Camera className="w-4 h-4 text-blue-500" />
+                <Camera className="w-4 h-4 text-indigo-500" />
                 <span>
-                  {[currentImage.make, currentImage.model].filter(Boolean).join(' ')}
+                  {[currentImage.make, currentImage.model]
+                    .filter(Boolean)
+                    .join(' ')}
                 </span>
               </div>
             )}
             {currentImage.altitude !== undefined &&
               currentImage.altitude !== null && (
                 <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                  <Mountain className="w-4 h-4 text-blue-500" />
+                  <Mountain className="w-4 h-4 text-indigo-500" />
                   <span>Altitude: {Math.round(currentImage.altitude)}m</span>
                 </div>
               )}
@@ -195,7 +200,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
               currentImage.exposureTime ||
               currentImage.iso) && (
               <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                <Aperture className="w-4 h-4 text-blue-500" />
+                <Aperture className="w-4 h-4 text-indigo-500" />
                 <span>
                   {currentImage.fNumber && `ƒ/${currentImage.fNumber}`}
                   {currentImage.exposureTime && ` ${formatExposure(currentImage.exposureTime)}`}
@@ -206,14 +211,14 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
             {(currentImage.latitude !== undefined &&
               currentImage.latitude !== null) && (
               <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                <Mountain className="w-4 h-4 text-blue-500" />
+                <Mountain className="w-4 h-4 text-indigo-500" />
                 <span>Latitude: {currentImage.latitude.toFixed(6)}</span>
               </div>
             )}
             {(currentImage.longitude !== undefined &&
               currentImage.longitude !== null) && (
               <div className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg">
-                <Mountain className="w-4 h-4 text-blue-500" />
+                <Mountain className="w-4 h-4 text-indigo-500" />
                 <span>Longitude: {currentImage.longitude.toFixed(6)}</span>
               </div>
             )}
